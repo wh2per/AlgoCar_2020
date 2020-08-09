@@ -1,0 +1,2 @@
+C:\Users\Administrator\Downloads\MyCar_V2.0_20200729\Bot_Cpp\v2\Build\Release\MyCar.exe
+C:\Users\Administrator\source\repos\Algo_2020\Build\Release\MyCar.exe
