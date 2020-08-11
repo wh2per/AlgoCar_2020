@@ -8,15 +8,12 @@ using namespace std;
 using namespace Car;
 
 bool is_debug = false;
+int recovery_count = 0;
+int accident_count = 0;
+bool collisionFlag = false;
 
 ControlValues control_driving(CarStateValues sensing_info)
 {
-	bool is_debug = false;
-	int recovery_count = 0;
-	int accident_count = 0;
-	bool collisionFlag = false;
-
-
 	if (is_debug)
 	{
 		cout << "=========================================================" << endl;
@@ -73,7 +70,7 @@ ControlValues control_driving(CarStateValues sensing_info)
       // sensing_info
     float set_brake = 0.0f; // 0~1로, 0이면 브레이크를 안밟은것, 1이면 밟은것
     float set_throttle = 0.9f; // -1~1 속도가 빠르면 트랙배열의 뒤에것을 참고하도록 구현되어져야 한다.
-
+    
     /*
      * 1)
      *
@@ -84,7 +81,6 @@ ControlValues control_driving(CarStateValues sensing_info)
      // 나옴.. 피해야하는 각도만큼의 계산이 필요해보임.
 
     int angle_num = (int)(sensing_info.speed / 90); // 이 숫자가 도로정보 관련 배열들의 인덱스를 선택하게하는 값이 된다. ( 속도가 빠를수록 높은 인덱스를
-    cout << angle_num << endl;                                      // 참조해야함. )
     float ref_angle = sensing_info.track_forward_angles[angle_num]; // 핸들값 변경 ( 속도가 빠르면 배열 뒤쪽을 바라봄 )
     float middle_add = (sensing_info.to_middle / 70) * -1; // 양수이면 도로의 오른쪽에 있는 것이니, 핸들을 왼쪽으로 꺾어야한다. ( 중앙에 가까울 수록 0에
     float set_steering = (ref_angle - sensing_info.moving_angle) / (180 - sensing_info.speed); // 180은 최대속도인데, 우리는
@@ -177,11 +173,11 @@ ControlValues control_driving(CarStateValues sensing_info)
     // 급커브 계산
 
     // ============================ 충돌했을 때 처리 ==============================
-    if (sensing_info.lap_progress > 0.5 && !collisionFlag && (sensing_info.speed < 1.0) // sensing_info.lap_progress는
+    if (sensing_info.lap_progress > 0.5 && !collisionFlag && (sensing_info.speed < 1.0 && sensing_info.speed > -1.0)){ // sensing_info.lap_progress는
                                                                    // 처음시작했을때도 충돌이라고 느낄 수 있으니.
                                                                    // 그 경우를 제외해준것
-        && sensing_info.speed > -1.0) {
         accident_count += 1;
+        cout << accident_count << endl;
     }
 
     if (accident_count > 6) {
