@@ -87,8 +87,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     set_steering += middle_add;
 
 
-    // ================================= 장애물 처리
-    // =====================================
+    // ================================= 장애물 처리=====================================
     if (sensing_info.track_forward_obstacles.size() > 0) {
         Car::ObstaclesInfo fwd_obstacle = sensing_info.track_forward_obstacles[0]; // 여기서 0이 장애물 정보를
                                                                              // 갖고 있는 0번째
@@ -112,8 +111,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     }
     // ===============================================================================
 
-    // ================================= 상대차량 위치파악 및 스티어링 조작
-    // =====================================
+    // ================================= 상대차량 위치파악 및 스티어링 조작 =====================================
     if (sensing_info.opponent_cars_info.size() > 0) {
         Car::CarsInfo opp_car = sensing_info.opponent_cars_info[0];
         if (opp_car.dist < 20 && opp_car.dist > -5) { // 해당 범위 내에 있는 상대차만 고려하기. 전방
@@ -133,9 +131,9 @@ ControlValues control_driving(CarStateValues sensing_info)
     // 각 도로의 정보 배열마다 몇미터인지에 대한 정보를 확인할 수 있음. ( 위의 코드는 각도를 얻을 수 있음. 필요하면 활용하고 필요없으면
     // 안해도됨 )
 
-//      sensing_info.distance_to_way_points.get(0);
+    //sensing_info.distance_to_way_points.get(0);
 
-      // ====================== 급커브 구간에 대한 설정 =================
+    // ====================== 급커브 구간에 대한 설정 =================
     bool full_throttle = true;
     bool emergency_brake = false;
     
@@ -173,9 +171,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     // 급커브 계산
 
     // ============================ 충돌했을 때 처리 ==============================
-    if (sensing_info.lap_progress > 0.5 && !collisionFlag && (sensing_info.speed < 1.0 && sensing_info.speed > -1.0)){ // sensing_info.lap_progress는
-                                                                   // 처음시작했을때도 충돌이라고 느낄 수 있으니.
-                                                                   // 그 경우를 제외해준것
+    if (sensing_info.lap_progress > 0.5 && !collisionFlag && (sensing_info.speed < 1.0 && sensing_info.speed > -1.0)){ // sensing_info.lap_progress는 첫 시작을 제외하기 위함                                                            
         accident_count += 1;
         cout << accident_count << endl;
     }
@@ -185,7 +181,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     }
 
     if (collisionFlag) {
-        set_steering = 0.02f;
+        set_steering = 0;
         set_brake = 0;
         set_throttle = -1;
         recovery_count += 1; // 후진을 언제까지할 것인지
@@ -208,8 +204,7 @@ ControlValues control_driving(CarStateValues sensing_info)
 
 	if (is_debug)
 	{
-		cout << "[MyCar] steering:" << car_controls.steering << ", throttle:" << car_controls.throttle
-			 << ", brake:" << car_controls.brake << endl;
+		cout << "[MyCar] steering:" << car_controls.steering << ", throttle:" << car_controls.throttle << ", brake:" << car_controls.brake << endl;
 	}
 	//
 	// Editing area ends
