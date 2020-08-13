@@ -69,7 +69,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     // Moving straight forward
       // sensing_info
     float set_brake = 0.0f; // 0~1로, 0이면 브레이크를 안밟은것, 1이면 밟은것
-    float set_throttle = 0.9f; // -1~1 속도가 빠르면 트랙배열의 뒤에것을 참고하도록 구현되어져야 한다.
+    float set_throttle = 0.85f; // -1~1 속도가 빠르면 트랙배열의 뒤에것을 참고하도록 구현되어져야 한다.
     
     /*
      * 1)
@@ -140,7 +140,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     int road_range = (int)(sensing_info.speed / 30); // 현재 내 스피드를 30으로 나누어 줌
     for (int i = 0; i < road_range; i += 1) {
         float fwd_angle = abs(sensing_info.track_forward_angles[i]);
-        if (fwd_angle > 50) { // 커브값이 50도 이상인 경우 full throttle 실시
+        if (fwd_angle > 50) { // 커브값이 50도 이상인 경우 full throttle 해제
             full_throttle = false;
         }
         if (fwd_angle > 90) {
@@ -167,9 +167,6 @@ ControlValues control_driving(CarStateValues sensing_info)
         }
     }
 
-    // ==================================================================
-    // 급커브 계산
-
     // ============================ 충돌했을 때 처리 ==============================
     if (sensing_info.lap_progress > 0.5 && !collisionFlag && (sensing_info.speed < 1.0 && sensing_info.speed > -1.0)){ // sensing_info.lap_progress는 첫 시작을 제외하기 위함                                                            
         accident_count += 1;
@@ -181,7 +178,7 @@ ControlValues control_driving(CarStateValues sensing_info)
     }
 
     if (collisionFlag) {
-        set_steering = 0;
+        set_steering = +0.2f;
         set_brake = 0;
         set_throttle = -1;
         recovery_count += 1; // 후진을 언제까지할 것인지
