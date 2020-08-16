@@ -70,41 +70,53 @@ ControlValues control_driving(CarStateValues sensing_info)
       // sensing_info
     float set_brake = 0.0f; // 0~1로, 0이면 브레이크를 안밟은것, 1이면 밟은것
     float set_throttle = 0.85f; // -1~1 속도가 빠르면 트랙배열의 뒤에것을 참고하도록 구현되어져야 한다.
-    
-    /*
-     * 1)
-     *
-     */
+
+
      // track_forward_obstacles ==> 전방 장애물 위치 (정보)
      // Target_Point == > 내가 가려고 하는 곳0.75( to_middle - avoid_width - to_middle )
      // 삼각함수얘기가
      // 나옴.. 피해야하는 각도만큼의 계산이 필요해보임.
 
-    int angle_num = (int)(sensing_info.speed / 90); // 이 숫자가 도로정보 관련 배열들의 인덱스를 선택하게하는 값이 된다. ( 속도가 빠를수록 높은 인덱스를
+
+    // ================================= 도로 중앙으로 달리기 =====================================
+    int angle_num = (int)(sensing_info.speed / 90); // 속도가 빠를수록 더 멀리있는 인덱스를 참고해야함. 지금처럼 90으로하면 90이하 속도에서는 항상 한치 앞만 보게됨.
     float ref_angle = sensing_info.track_forward_angles[angle_num]; // 핸들값 변경 ( 속도가 빠르면 배열 뒤쪽을 바라봄 )
-    float middle_add = (sensing_info.to_middle / 70) * -1; // 양수이면 도로의 오른쪽에 있는 것이니, 핸들을 왼쪽으로 꺾어야한다. ( 중앙에 가까울 수록 0에
-    float set_steering = (ref_angle - sensing_info.moving_angle) / (180 - sensing_info.speed); // 180은 최대속도인데, 우리는
-    set_steering += middle_add;
+    float middle_add = (sensing_info.to_middle / 70) * -1; // 양수이면 도로의 오른쪽에 있는 것이니, 핸들을 왼쪽으로 꺾어야한다. (중앙에 가까울 수록 0에 가까워짐)
+    
+    float set_steering = (ref_angle - sensing_info.moving_angle) / (180 - sensing_info.speed); // 도로가 휜 정도에서 내 차의 각도를 빼주면 얼마나 핸들을 꺾어야하는지 나옴.
+    set_steering += middle_add;                                                                 // 하지만 steering은 -1.0 ~ 1.0 범위이므로 속도에 따른 비율로 나눠줘야함.
+    // ===============================================================================
 
 
     // ================================= 장애물 처리=====================================
     if (sensing_info.track_forward_obstacles.size() > 0) {
-        Car::ObstaclesInfo fwd_obstacle = sensing_info.track_forward_obstacles[0]; // 여기서 0이 장애물 정보를
-                                                                             // 갖고 있는 0번째
-                                                                             // 배열임.
-        if (fwd_obstacle.dist < 60 && fwd_obstacle.dist > 0 && abs(fwd_obstacle.to_middle) < 8.0) {
-            // 도로밖은 제외하고, 전방 0~60미터까지만 장애물에 대한 처리를 하는 것 ( 도로폭은 8임)
-
+        Car::ObstaclesInfo fwd_obstacle = sensing_info.track_forward_obstacles[0]; // 여기서 0이 장애물 정보를 갖고 있는 0번째 배열임.
+        
+        /*
+        if (sensing_info.track_forward_obstacles.size() > 1) {
+            Car::ObstaclesInfo fwd_obstacle2 = sensing_info.track_forward_obstacles[1]; // 여기서 0이 장애물 정보를 갖고 있는 0번째 배열임.
+            cout << "두번째 장애물의 middle : " << fwd_obstacle2.to_middle << endl;
+            cout << "두번째 장애물의 dist : " << fwd_obstacle2.dist << endl;
         }
+        */
+        if (fwd_obstacle.dist < 60 && fwd_obstacle.dist > 0 && abs(fwd_obstacle.to_middle) < 8.0) {  // 도로밖은 제외 전방 0~60미터까지만 장애물에 대한 처리를 하는 것 ( 도로폭은 8임)
+            float avoid_width = 3.0f; // 피해야하는 길이 생각해야함. ( 2개인것도있고 3개가 띄엄띄엄 있는 경우도 있음 )
+            float diff = fwd_obstacle.to_middle - sensing_info.to_middle;
+            
+            //cout << "첫번째 장애물의 middle : " << fwd_obstacle.to_middle << endl;
+            //cout << "첫번째 장애물의 dist : " << fwd_obstacle.dist << endl;
+            // << "내 차의 middle : " << sensing_info.to_middle<<endl;
 
-        float avoid_width = 4.7f; // 피해야하는 길이 생각해야함. ( 2개인것도있고 3개가 띄엄띄엄 있는 경우도 있음 )
-        float diff = fwd_obstacle.to_middle - sensing_info.to_middle;
+            if (abs(diff) < avoid_width) {
+                ref_angle = (float)(abs(atan((diff - avoid_width) / fwd_obstacle.dist) * (180 / 3.14159265358979f)));
 
-        if (abs(diff) < avoid_width) {
-            ref_angle = (float)(abs(atan((diff - avoid_width) / fwd_obstacle.dist) * (180 / 3.14159265358979f)));
-            middle_add = 0;
-            if (diff > 0) {
-                ref_angle *= -1; // 여기까지 코드가 구현되면 불필요한 경우에도 가게됨. 그래서 장애물과의 거리를 체크해야함. -1로 두면 왼쪽으로만 감.
+                cout << "첫번째 장애물의 diff : " << diff << endl;
+                cout << "ref angle : " << ref_angle << endl;
+
+                middle_add = 0;
+                if (diff > 0) {     // 장애물이 오른쪽에 있다는 뜻
+                    ref_angle *= -1; // -1로 두면 왼쪽으로만 감.
+                }
                 set_steering = (ref_angle - sensing_info.moving_angle) / (180 - sensing_info.speed);
             }
         }
@@ -184,7 +196,7 @@ ControlValues control_driving(CarStateValues sensing_info)
         recovery_count += 1; // 후진을 언제까지할 것인지
     }
 
-    if (recovery_count > 20) {
+    if (recovery_count > 10) {
         collisionFlag = false;
         recovery_count = 0;
         accident_count = 0;
